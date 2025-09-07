@@ -21,8 +21,8 @@ ota:
 #  clk_mode: GPIO17_OUT
 #  phy_addr: 0
 wifi:
-  ssid: "JPS"
-  password: "chenini3411"
+  ssid: !secret SSID
+  password: !secret password
   manual_ip:
     static_ip: 10.4.200.232
     gateway: 10.4.200.254
