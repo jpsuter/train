@@ -1,0 +1,163 @@
+esphome:
+  name: train1-a16
+  includes: std_includes.h
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+
+ota:
+  platform: esphome
+
+#ethernet:
+#  type: LAN8720
+#  mdc_pin: GPIO23
+#  mdio_pin: GPIO18
+#  clk_mode: GPIO17_OUT
+#  phy_addr: 0
+wifi:
+  ssid: "JPS"
+  password: "chenini3411"
+  manual_ip:
+    static_ip: 10.4.200.232
+    gateway: 10.4.200.254
+    subnet: 255.255.255.0
+
+i2c:
+  sda: 4
+  scl: 5
+  scan: true
+  id: bus_a
+
+pcf8574:
+  - id: 'pcf8574_hub_out_1' # for output channel 1-8
+    address: 0x24
+    pcf8575: false
+  - id: 'pcf8574_hub_out_2' # for output channel 9-16
+    address: 0x25
+    pcf8575: false
+  - id: 'pcf8574_hub_in_1' # for input channel 1-8
+    address: 0x21
+    pcf8575: false
+  - id: 'pcf8574_hub_in_2' # for input channel 9-16
+    address: 0x22
+    pcf8575: false
+
+mqtt:
+  broker: 10.4.200.220
+  discovery: false
+  username: mqtt
+  password: tititoto
+  topic_prefix: train
+  on_message:
+     - topic: rocrail/service/info
+       then:
+         - lambda: |-
+               std::regex r("(\\w+)=\"(\\w+)\"");
+               std::smatch m;
+               std::string aiguilage, sens, s0;
+               if (std::regex_search(x, m, r)) {
+                 aiguilage=m[2].str();
+                 s0=m.suffix().str();
+                 if (std::regex_search(s0, m, r) && m[1].str()=="state") {
+                   sens=m[2].str();
+                   switch(hash(aiguilage)) {
+                     case "Coul1Out"_hash:{
+                         auto call = id(Coul1Out).make_call();
+                         call.set_option(sens);
+                         call.perform();
+                       }
+                       break;
+                     case "Triple"_hash:{
+                         auto call = id(Triple).make_call();
+                         call.set_option(sens);
+                         call.perform();
+                       }
+                       break;
+                   }
+                 }
+               }
+
+
+# Individual outputs
+
+switch:
+  - platform: gpio
+    id: Coul1OutS
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 0
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: Coul1OutT
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 1
+      mode:
+        output: true
+      inverted: true
+
+binary_sensor:
+  - platform: gpio
+    id: C1_in
+    pin:
+      pcf8574: pcf8574_hub_in_1
+      number: 0
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 100ms
+    on_press:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: "<fb id=\"C1_in\" state=\"true\"/>"
+    on_release:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: "<fb id=\"C1_in\" state=\"false\"/>"
+
+
+select:
+  - platform: template
+    id: Triple
+    name: "aiguillage Triple"
+    optimistic: true
+    options:
+      - right
+      - straight
+      - left
+    initial_option: straight
+
+  - platform: template
+    id: Coul1Out
+    name: "aiguillage Coul1Out"
+    optimistic: true
+    options:
+      - straight
+      - turnout
+    initial_option: straight
+    state_topic: train/AigCoul1Out/state
+    command_topic: train/AigCoul1Out/set
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(Coul1Out).state == "straight";'
+            then:
+              - switch.turn_on: Coul1OutS
+              - delay: 500ms
+              - switch.turn_off: Coul1OutS
+            else:
+              - switch.turn_on: Coul1OutT
+              - delay: 500ms
+              - switch.turn_off: Coul1OutT
