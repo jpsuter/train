@@ -56,58 +56,19 @@ mqtt:
               std::string lumiere(x["id"]);
               std::string cmd(x["cmd"]);
               bright=x["value"];
-              switch(hash(lumiere)) {
-                case "GareB"_hash:{
-                    if (cmd == "on"){
-                      auto call = id(GareB).turn_on();
-                      call.perform();
-                    }else{
-                      auto call = id(GareB).turn_off();
-                      call.perform();
-                    }
-                  }
-                  break;
-                case "GareH"_hash:{
-                    if (cmd == "on"){
-                      auto call = id(GareH).turn_on();
-                      call.perform();
-                    }else{
-                      auto call = id(GareH).turn_off();
-                      call.perform();
-                    }
-                  }
-                  break;
-                case "Eglise"_hash:{
-                    if (cmd == "on"){
-                      auto call = id(Eglise).turn_on();
-                      call.perform();
-                    }else{
-                      auto call = id(Eglise).turn_off();
-                      call.perform();
-                    }
-                  }
-                  break;
-                case "QuaiB"_hash:{
-                    if (cmd == "on"){
-                      auto call = id(QuaiB).turn_on();
-                      call.perform();
-                    }else{
-                      auto call = id(QuaiB).turn_off();
-                      call.perform();
-                    }
-                  }
-                  break;
-                case "Maison1"_hash:{
-                    if (cmd == "on"){
-                      auto call = id(Maison1).turn_on();
-                      call.perform();
-                    }else{
-                      auto call = id(Maison1).turn_off();
-                      call.perform();
-                    }
-                  }
-                  break;
-                }
+              auto lights=App.get_lights();
+              int index=lights.size();
+              for(unsigned int i = 0; i < lights.size(); i++) {
+                if (lights[i]->get_name() == lumiere) index=i;
+              }
+              if (index == lights.size())
+                ESP_LOGD("erreur", "index: %i", index);
+              else {
+                if (cmd == "on")
+                  lights[index]->turn_on().perform();
+                else
+                  lights[index]->turn_off().perform();
+              }
             }
             if (type == "sys" && server != "mqttreader") {
               std::string cmd(x["cmd"]);
