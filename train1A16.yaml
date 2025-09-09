@@ -51,38 +51,41 @@ pcf8574:
 mqtt:
   broker: 10.4.200.220
   discovery: false
-  username: mqtt
-  password: tititoto
+  username: !secret mqtt
+  password: !secret mqttpwd
   topic_prefix: train
-  on_message:
-     - topic: rocrail/service/info
-       then:
-         - lambda: |-
-               std::regex r("(\\w+)=\"(\\w+)\"");
-               std::smatch m;
-               std::string aiguilage, sens, s0;
-               if (std::regex_search(x, m, r)) {
-                 aiguilage=m[2].str();
-                 s0=m.suffix().str();
-                 if (std::regex_search(s0, m, r) && m[1].str()=="state") {
-                   sens=m[2].str();
-                   switch(hash(aiguilage)) {
-                     case "Coul1Out"_hash:{
-                         auto call = id(Coul1Out).make_call();
-                         call.set_option(sens);
-                         call.perform();
-                       }
-                       break;
-                     case "Triple"_hash:{
-                         auto call = id(Triple).make_call();
-                         call.set_option(sens);
-                         call.perform();
-                       }
-                       break;
-                   }
-                 }
-               }
-
+  on_json_message:
+    topic: train/rocrail/command
+    then:
+      - lambda: |-
+          const char *aiguilage;
+          const char *sens;
+          int moteur;
+          if (x["type"] == "sw" && x["server"] != "mqttreader") {
+            aiguilage=x["id"];
+            sens=x["cmd"];
+            moteur=x["value1"];
+            switch(hash(aiguilage)) {
+              case "Coul1Out"_hash:{
+                  auto call = id(Coul1Out).make_call();
+                  call.set_option(sens);
+                  call.perform();
+                }
+                break;
+              case "Triple"_hash:{
+                  if (moteur == 2){
+                    auto call = id(Triple2).make_call();
+                    call.set_option(sens);
+                    call.perform();
+                  }else{
+                    auto call = id(Triple1).make_call();
+                    call.set_option(sens);
+                    call.perform();
+                  }
+                }
+                break;
+              }
+           }
 
 # Individual outputs
 
@@ -126,16 +129,23 @@ binary_sensor:
             topic: rocrail/service/client
             payload: "<fb id=\"C1_in\" state=\"false\"/>"
 
-
 select:
   - platform: template
-    id: Triple
-    name: "aiguillage Triple"
+    id: Triple1
+    name: "aig Triple M1"
     optimistic: true
     options:
-      - right
       - straight
-      - left
+      - turnout
+    initial_option: straight
+
+  - platform: template
+    id: Triple2
+    name: "aig TripleM2"
+    optimistic: true
+    options:
+      - straight
+      - turnout
     initial_option: straight
 
   - platform: template
@@ -146,8 +156,6 @@ select:
       - straight
       - turnout
     initial_option: straight
-    state_topic: train/AigCoul1Out/state
-    command_topic: train/AigCoul1Out/set
     on_value:
       then:
         - if:

@@ -46,41 +46,53 @@ mqtt:
   topic_prefix: train
   id: mqtt_ha
   on_json_message:
-    topic: train/rocrail/command
-    then:
-      - lambda: |-
-          float bright;
-          std::string server(x["server"]);
-          std::string type(x["type"]);
-          ESP_LOGD("avant test"," %s, %s", x["type"], server.c_str());
-          if (type == "co" && server != "mqttreader") {
-            std::string lumiere(x["id"]);
-            std::string cmd(x["cmd"]);
-            bright=x["value"];
-            ESP_LOGD("apres test"," %s, %s, %f",lumiere.c_str() , cmd.c_str(), bright);
-            switch(hash(lumiere)) {
-              case "GareB"_hash:{
-                  if (cmd == "on"){
-                    auto call = id(GareH).turn_on();
-                    call.perform();
-                  }else{
-                    auto call = id(GareH).turn_off();
-                    call.perform();
+    - topic: train/rocrail/command
+      then:
+        - lambda: |-
+            float bright;
+            std::string server(x["server"]);
+            std::string type(x["type"]);
+            if (type == "co" && server != "mqttreader") {
+              std::string lumiere(x["id"]);
+              std::string cmd(x["cmd"]);
+              bright=x["value"];
+              switch(hash(lumiere)) {
+                case "GareB"_hash:{
+                    if (cmd == "on"){
+                      auto call = id(GareB).turn_on();
+                      call.perform();
+                    }else{
+                      auto call = id(GareB).turn_off();
+                      call.perform();
+                    }
                   }
-                }
-                break;
-              case "GareH"_hash:{
-                  if (cmd == "on"){
-                    auto call = id(GareH).turn_on();
-                    call.perform();
-                  }else{
-                    auto call = id(GareH).turn_off();
-                    call.perform();
+                  break;
+                case "GareH"_hash:{
+                    if (cmd == "on"){
+                      auto call = id(GareH).turn_on();
+                      call.perform();
+                    }else{
+                      auto call = id(GareH).turn_off();
+                      call.perform();
+                    }
                   }
+                  break;
                 }
-                break;
-              }
-           }
+            }
+            if (type == "sys" && server != "mqttreader") {
+              std::string cmd(x["cmd"]);
+              if (cmd == "go")
+                id(AlimRail).publish_state(true);
+              else
+                id(AlimRail).publish_state(false);
+            }
+            if (type == "auto" && server != "mqttreader") {
+              std::string cmd(x["cmd"]);
+              if (cmd == "on")
+                id(ModeAuto).publish_state(true);
+              else
+                id(ModeAuto).publish_state(false);
+            }
 
 
 output:
@@ -90,6 +102,41 @@ output:
   - platform: pca9685
     channel: 1
     id: pwm01
+
+switch:
+  - platform: template
+    id: AlimRail
+    name: "Alimentation rails"
+    icon: mdi:fence-electric
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<sys cmd="go"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<sys cmd="stop"/>'
+  - platform: template
+    id: ModeAuto
+    name: "Automatique"
+    icon: mdi:refresh-auto
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<auto cmd="on"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<auto cmd="off"/>'
+
 
 light:
   - platform: monochromatic
