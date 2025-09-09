@@ -77,6 +77,36 @@ mqtt:
                     }
                   }
                   break;
+                case "Eglise"_hash:{
+                    if (cmd == "on"){
+                      auto call = id(Eglise).turn_on();
+                      call.perform();
+                    }else{
+                      auto call = id(Eglise).turn_off();
+                      call.perform();
+                    }
+                  }
+                  break;
+                case "QuaiB"_hash:{
+                    if (cmd == "on"){
+                      auto call = id(QuaiB).turn_on();
+                      call.perform();
+                    }else{
+                      auto call = id(QuaiB).turn_off();
+                      call.perform();
+                    }
+                  }
+                  break;
+                case "Maison1"_hash:{
+                    if (cmd == "on"){
+                      auto call = id(Maison1).turn_on();
+                      call.perform();
+                    }else{
+                      auto call = id(Maison1).turn_off();
+                      call.perform();
+                    }
+                  }
+                  break;
                 }
             }
             if (type == "sys" && server != "mqttreader") {
@@ -102,6 +132,48 @@ output:
   - platform: pca9685
     channel: 1
     id: pwm01
+  - platform: pca9685
+    channel: 2
+    id: pwm02
+  - platform: pca9685
+    channel: 3
+    id: pwm03
+  - platform: pca9685
+    channel: 4
+    id: pwm04
+  - platform: pca9685
+    channel: 5
+    id: pwm05
+  - platform: pca9685
+    channel: 6
+    id: pwm06
+  - platform: pca9685
+    channel: 7
+    id: pwm07
+  - platform: pca9685
+    channel: 8
+    id: pwm08
+  - platform: pca9685
+    channel: 9
+    id: pwm09
+  - platform: pca9685
+    channel: 10
+    id: pwm10
+  - platform: pca9685
+    channel: 11
+    id: pwm11
+  - platform: pca9685
+    channel: 12
+    id: pwm12
+  - platform: pca9685
+    channel: 13
+    id: pwm13
+  - platform: pca9685
+    channel: 14
+    id: pwm14
+  - platform: pca9685
+    channel: 15
+    id: pwm15
 
 switch:
   - platform: template
@@ -170,4 +242,52 @@ light:
         - mqtt.publish:
             topic: rocrail/service/client
             payload: '<co id="GareH" cmd="off"/>'
+
+  - platform: monochromatic
+    name: 'Eglise'
+    id: Eglise
+    output: pwm02
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="Eglise" cmd="on"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="Eglise" cmd="off"/>'
+
+  - platform: monochromatic
+    name: 'QuaiB'
+    id: QuaiB
+    output: pwm03
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="QuaiB" cmd="on"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="QuaiB" cmd="off"/>'
+
+  - platform: monochromatic
+    name: 'Maison1'
+    id: Maison1
+    output: pwm04
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="Maison1" cmd="on"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="Maison1" cmd="off"/>'
 
