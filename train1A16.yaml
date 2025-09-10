@@ -58,40 +58,27 @@ mqtt:
     topic: train/rocrail/command
     then:
       - lambda: |-
-          const char *aiguilage;
-          const char *sens;
-          int moteur;
-          if (x["type"] == "sw" && x["server"] != "mqttreader") {
-            aiguilage=x["id"];
-            sens=x["cmd"];
-            moteur=x["value1"];
-            switch(hash(aiguilage)) {
-              case "Coul1Out"_hash:{
-                  auto call = id(Coul1Out).make_call();
-                  call.set_option(sens);
-                  call.perform();
-                }
-                break;
-              case "Triple"_hash:{
-                  if (moteur == 2){
-                    auto call = id(Triple2).make_call();
-                    call.set_option(sens);
-                    call.perform();
-                  }else{
-                    auto call = id(Triple1).make_call();
-                    call.set_option(sens);
-                    call.perform();
-                  }
-                }
-                break;
-              }
+          std::string server(x["server"]);
+          std::string type(x["type"]);
+          if (type == "sw" && server != "mqttreader") {
+            std::string aiguilage(x["id"]);
+            std::string sens(x["cmd"]);
+            auto selects=App.get_selects();
+            int index=selects.size();
+            for(unsigned int i = 0; i < selects.size(); i++) {
+              if (selects[i]->get_name() == aiguilage) index=i;
+            }
+            if (index == selects.size())
+              ESP_LOGD("erreur", "index: %i", index);
+            else
+              selects[index]->publish_state(sens); 
            }
 
 # Individual outputs
 
 switch:
   - platform: gpio
-    id: Coul1OutS
+    id: out00
     pin:
       pcf8574: pcf8574_hub_out_1
       number: 0
@@ -99,10 +86,122 @@ switch:
         output: true
       inverted: true
   - platform: gpio
-    id: Coul1OutT
+    id: out01
     pin:
       pcf8574: pcf8574_hub_out_1
       number: 1
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out02
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 2
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out03
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 3
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out04
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 4
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out05
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 5
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out06
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 6
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out07
+    pin:
+      pcf8574: pcf8574_hub_out_1
+      number: 7
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out08
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 0
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out09
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 1
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out10
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 2
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out11
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 3
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out12
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 4
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out13
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 5
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out14
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 6
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: out15
+    pin:
+      pcf8574: pcf8574_hub_out_2
+      number: 7
       mode:
         output: true
       inverted: true
@@ -131,26 +230,8 @@ binary_sensor:
 
 select:
   - platform: template
-    id: Triple1
-    name: "aig Triple M1"
-    optimistic: true
-    options:
-      - straight
-      - turnout
-    initial_option: straight
-
-  - platform: template
-    id: Triple2
-    name: "aig TripleM2"
-    optimistic: true
-    options:
-      - straight
-      - turnout
-    initial_option: straight
-
-  - platform: template
     id: Coul1Out
-    name: "aiguillage Coul1Out"
+    name: "Coul1Out"
     optimistic: true
     options:
       - straight
@@ -162,10 +243,184 @@ select:
             condition:
               - lambda: 'return id(Coul1Out).state == "straight";'
             then:
-              - switch.turn_on: Coul1OutS
+              - switch.turn_on: out00
               - delay: 500ms
-              - switch.turn_off: Coul1OutS
+              - switch.turn_off: out00
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="Coul1Out" cmd="straight"/>'
             else:
-              - switch.turn_on: Coul1OutT
+              - switch.turn_on: out01
               - delay: 500ms
-              - switch.turn_off: Coul1OutT
+              - switch.turn_off: out01
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="Coul1Out" cmd="turnout"/>'
+
+  - platform: template
+    id: GB3Out
+    name: "GB3Out"
+    optimistic: true
+    options:
+      - straight
+      - turnout
+    initial_option: straight
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(GB3Out).state == "straight";'
+            then:
+              - switch.turn_on: out02
+              - delay: 500ms
+              - switch.turn_off: out02
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB3Out" cmd="straight"/>'
+            else:
+              - switch.turn_on: out03
+              - delay: 500ms
+              - switch.turn_off: out03
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB3Out" cmd="turnout"/>'
+
+  - platform: template
+    id: Coul1In
+    name: "Coul1In"
+    optimistic: true
+    options:
+      - straight
+      - turnout
+    initial_option: straight
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(Coul1In).state == "straight";'
+            then:
+              - switch.turn_on: out04
+              - delay: 500ms
+              - switch.turn_off: out04
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="Coul1In" cmd="straight"/>'
+            else:
+              - switch.turn_on: out05
+              - delay: 500ms
+              - switch.turn_off: out05
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="Coul1In" cmd="turnout"/>'
+
+  - platform: template
+    id: GB3In
+    name: "GB3In"
+    optimistic: true
+    options:
+      - straight
+      - turnout
+    initial_option: straight
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(GB3In).state == "straight";'
+            then:
+              - switch.turn_on: out06
+              - delay: 500ms
+              - switch.turn_off: out06
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB3In" cmd="straight"/>'
+            else:
+              - switch.turn_on: out07
+              - delay: 500ms
+              - switch.turn_off: out07
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB3In" cmd="turnout"/>'
+
+  - platform: template
+    id: GB2Out
+    name: "GB2Out"
+    optimistic: true
+    options:
+      - straight
+      - turnout
+    initial_option: straight
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(GB2Out).state == "straight";'
+            then:
+              - switch.turn_on: out08
+              - delay: 500ms
+              - switch.turn_off: out08
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB2Out" cmd="straight"/>'
+            else:
+              - switch.turn_on: out09
+              - delay: 500ms
+              - switch.turn_off: out09
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB2Out" cmd="turnout"/>'
+
+  - platform: template
+    id: GB2GH
+    name: "GB2GH"
+    optimistic: true
+    options:
+      - straight
+      - turnout
+    initial_option: straight
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(GB2GH).state == "straight";'
+            then:
+              - switch.turn_on: out10
+              - delay: 500ms
+              - switch.turn_off: out10
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB2GH" cmd="straight"/>'
+            else:
+              - switch.turn_on: out11
+              - delay: 500ms
+              - switch.turn_off: out11
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB2GH" cmd="turnout"/>'
+
+  - platform: template
+    id: GB2In
+    name: "GB2In"
+    optimistic: true
+    options:
+      - straight
+      - turnout
+    initial_option: straight
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(GB2In).state == "straight";'
+            then:
+              - switch.turn_on: out12
+              - delay: 500ms
+              - switch.turn_off: out12
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB2In" cmd="straight"/>'
+            else:
+              - switch.turn_on: out13
+              - delay: 500ms
+              - switch.turn_off: out13
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<sw id="GB2In" cmd="turnout"/>'
