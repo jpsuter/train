@@ -84,7 +84,71 @@ mqtt:
               else
                 id(ModeAuto).publish_state(false);
             }
-
+            if (type == "lc" && server != "mqttreader") {
+              std::string loco(x["id"]);
+              if (x.containsKey("V")){
+                int vitesse(x["V"]);
+                std::string loco1=loco+"V";
+                auto nombres=App.get_numbers();
+                int index=nombres.size();
+                for(unsigned int i = 0; i < nombres.size(); i++) {
+                  if (nombres[i]->get_name() == loco1) index=i;
+                }
+                if (index == nombres.size())
+                  ESP_LOGD("erreur", "index: %i", index);
+                else
+                  nombres[index]->publish_state(vitesse);
+              }
+              if (x.containsKey("dir")){
+                std::string dir(x["dir"]);
+                std::string loco1=loco+"A";
+                auto  selects=App.get_selects();
+                int index=selects.size();
+                for(unsigned int i = 0; i < selects.size(); i++) {
+                  if (selects[i]->get_name() == loco1) index=i;
+                }
+                if (index == selects.size())
+                  ESP_LOGD("erreur", "index: %i", index);
+                else 
+                  if (dir == "true")
+                    selects[index]->publish_state("avant");
+                  else
+                    selects[index]->publish_state("arriere");
+              }
+            }
+            if (type == "fn" && server != "mqttreader") {
+              std::string loco(x["id"]);
+              std::string funcno(x["fnchanged"]);
+              int no_f = std::stoi(funcno);
+              std::string funcval0(x["f0"]);
+              std::string funcval1(x["f1"]);
+              std::string funcval6(x["f6"]);
+              std::string funcval;
+              switch (no_f){
+                case 0:
+                  funcval=funcval0;
+                  break;
+                case 1:
+                  funcval=funcval1;
+                  break;
+                case 6:
+                  funcval=funcval6;
+                  break;
+              }
+              std::string loco1=loco+"f"+std::to_string(no_f);
+              auto switchs=App.get_switches();
+              int index=switchs.size();
+              for(unsigned int i = 0; i < switchs.size(); i++) {
+                if (switchs[i]->get_name() == loco1) index=i;
+              }
+              if (index == switchs.size())
+                ESP_LOGD("erreur", "index: %i, %s", index, loco1.c_str());
+              else
+                if (funcval=="true")
+                  switchs[index]->turn_on();
+                else
+                  switchs[index]->turn_off();
+            }
 
 output:
   - platform: pca9685
@@ -136,6 +200,161 @@ output:
     channel: 15
     id: pwm15
 
+number:
+  - platform: template
+    id: BR206V
+    name: "BR206V"
+    icon: mdi:speedometer
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: !lambda |-
+              int vitesse=lround(id(BR206V).state);
+              return std::string("<lc id=\"BR206\" V=\"")+std::to_string(vitesse)+std::string("\"/>");
+  - platform: template
+    id: BR23V
+    name: "BR23V"
+    icon: mdi:speedometer
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: !lambda |-
+              int vitesse=lround(id(BR23V).state);
+              return std::string("<lc id=\"BR23\" V=\"")+std::to_string(vitesse)+std::string("\"/>");
+  - platform: template
+    id: BR74V
+    name: "BR74V"
+    icon: mdi:speedometer
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: !lambda |-
+              int vitesse=lround(id(BR74V).state);
+              return std::string("<lc id=\"BR74\" V=\"")+std::to_string(vitesse)+std::string("\"/>");
+  - platform: template
+    id: DB798V
+    name: "DB798V"
+    icon: mdi:speedometer
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: !lambda |-
+              int vitesse=lround(id(DB798V).state);
+              return std::string("<lc id=\"DB798\" V=\"")+std::to_string(vitesse)+std::string("\"/>");
+
+select:
+  - platform: template
+    id: BR206A
+    name: "BR206A"
+    optimistic: true
+    options:
+      - avant
+      - arriere
+    initial_option: avant
+    icon: mdi:forward
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(BR206A).state == "avant";'
+            then:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="BR206" dir="true"/>'
+            else:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="BR206" dir="false"/>'
+
+  - platform: template
+    id: BR23A
+    name: "BR23A"
+    optimistic: true
+    options:
+      - avant
+      - arriere
+    initial_option: avant
+    icon: mdi:forward
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(BR23A).state == "avant";'
+            then:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="BR23" dir="true"/>'
+            else:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="BR23" dir="false"/>'
+
+  - platform: template
+    id: BR74A
+    name: "BR74A"
+    optimistic: true
+    options:
+      - avant
+      - arriere
+    initial_option: avant
+    icon: mdi:forward
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(BR74A).state == "avant";'
+            then:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="BR74" dir="true"/>'
+            else:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="BR74" dir="false"/>'
+
+  - platform: template
+    id: DB798A
+    name: "DB798A"
+    optimistic: true
+    icon: mdi:forward
+    options:
+      - avant
+      - arriere
+    initial_option: avant
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(DB798A).state == "avant";'
+            then:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="DB798" dir="true"/>'
+            else:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="DB798" dir="false"/>'
+
 switch:
   - platform: template
     id: AlimRail
@@ -169,6 +388,103 @@ switch:
         - mqtt.publish:
             topic: rocrail/service/client
             payload: '<auto cmd="off"/>'
+  - platform: template
+    id: DB798f0
+    name: "DB798f0"
+    icon: mdi:car-light-high
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB798" fnchangedstate="true" fnchanged="0" f0="true"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB798" fnchangedstate="true" fnchanged="0" f0="false"/>'
+  - platform: template
+    id: DB798f1
+    name: "DB798f1"
+    icon: mdi:dome-light
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB798" fnchangedstate="true" fnchanged="1" f1="true"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB798" fnchangedstate="true" fnchanged="1" f1="false"/>'
+  - platform: template
+    id: DB798f6
+    name: "DB798f6"
+    icon: mdi:dome-light
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB798" fnchangedstate="true" fnchanged="6" f6="true"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB798" fnchangedstate="true" fnchanged="6" f6="false"/>'
+  - platform: template
+    id: DB206f0
+    name: "DB206f0"
+    icon: mdi:car-light-high
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB206" fnchangedstate="true" fnchanged="0" f0="true"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB206" fnchangedstate="true" fnchanged="0" f0="false"/>'
+  - platform: template
+    id: DB23f0
+    name: "DB23f0"
+    icon: mdi:car-light-high
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB23" fnchangedstate="true" fnchanged="0" f0="true"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB23" fnchangedstate="true" fnchanged="0" f0="false"/>'
+  - platform: template
+    id: DB74f0
+    name: "DB74f0"
+    icon: mdi:car-light-high
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB74" fnchangedstate="true" fnchanged="0" f0="true"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="DB74" fnchangedstate="true" fnchanged="0" f0="false"/>'
+
 
 
 light:
