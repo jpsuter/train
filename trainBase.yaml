@@ -38,12 +38,22 @@ pca9685:
   - id: pca9685_hub1
     frequency: 500
 
+mcp23017:
+  - id: 'mcp23017_hub1'
+    address: 0x20
+  - id: 'mcp23017_hub2'
+    address: 0x21
+  - id: 'mcp23017_hub3'
+    address: 0x22
+  - id: 'mcp23017_hub4'
+    address: 0x23
+
+
 mqtt:
   broker: 10.4.200.220
   discovery: false
   username: !secret mqtt
   password: !secret mqttpwd
-  topic_prefix: train
   id: mqtt_ha
   on_json_message:
     - topic: train/rocrail/command
@@ -149,6 +159,20 @@ mqtt:
                 else
                   switchs[index]->turn_off();
             }
+            if (type == "sw" && server != "mqttreader") {
+              std::string aiguilage(x["id"]);
+              std::string sens(x["cmd"]);
+              auto selects=App.get_selects();
+              int index=selects.size();
+              for(unsigned int i = 0; i < selects.size(); i++) {
+                if (selects[i]->get_name() == aiguilage) index=i;
+              }
+              if (index == selects.size())
+                ESP_LOGD("erreur", "index: %i", index);
+              else
+                selects[index]->publish_state(sens);
+             }
+
 
 output:
   - platform: pca9685
@@ -247,6 +271,58 @@ packages:
     vars:
       loco: BR74
       fnum: 0
+  out0: !include
+    file: outputs.yaml
+    vars:
+      nom: out00
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 0
+  out1: !include
+    file: outputs.yaml
+    vars:
+      nom: out01
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 1
+  detect1: !include
+    file: detecteurs.yaml
+    vars:
+      nom: gh1_enter
+      multiplex: mcp23xxx
+      hub: mcp23017_hub1
+      pin: 0
+  aiguil1: !include
+    file: aiguillages.yaml
+    vars:
+      nom: GH45In
+      sortieS: out00
+      sortieT: out01
+  lum1: !include
+    file: lumieres.yaml
+    vars:
+      nom: GareB
+      sortie: pwm00
+  lum2: !include
+    file: lumieres.yaml
+    vars:
+      nom: QuaiB
+      sortie: pwm01
+  lum3: !include
+    file: lumieres.yaml
+    vars:
+      nom: GareH
+      sortie: pwm02
+  lum4: !include
+    file: lumieres.yaml
+    vars:
+      nom: Eglise
+      sortie: pwm03
+  lum5: !include
+    file: lumieres.yaml
+    vars:
+      nom: Maison1
+      sortie: pwm04
 
 switch:
   - platform: template
@@ -281,87 +357,4 @@ switch:
         - mqtt.publish:
             topic: rocrail/service/client
             payload: '<auto cmd="off"/>'
-
-
-
-light:
-  - platform: monochromatic
-    name: 'GareB'
-    id: GareB
-    output: pwm00
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="GareB" cmd="on"/>'
-    on_turn_off:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="GareB" cmd="off"/>'
-
-  - platform: monochromatic
-    name: 'GareH'
-    id: GareH
-    output: pwm01
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="GareH" cmd="on"/>'
-    on_turn_off:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="GareH" cmd="off"/>'
-
-  - platform: monochromatic
-    name: 'Eglise'
-    id: Eglise
-    output: pwm02
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="Eglise" cmd="on"/>'
-    on_turn_off:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="Eglise" cmd="off"/>'
-
-  - platform: monochromatic
-    name: 'QuaiB'
-    id: QuaiB
-    output: pwm03
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="QuaiB" cmd="on"/>'
-    on_turn_off:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="QuaiB" cmd="off"/>'
-
-  - platform: monochromatic
-    name: 'Maison1'
-    id: Maison1
-    output: pwm04
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="Maison1" cmd="on"/>'
-    on_turn_off:
-      then:
-        - mqtt.publish:
-            topic: rocrail/service/client
-            payload: '<co id="Maison1" cmd="off"/>'
 

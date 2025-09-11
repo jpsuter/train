@@ -6,5 +6,5 @@ switch:
       number: ${num}
       mode:
         output: true
-      inverted: true
+      inverted: false
 

@@ -1,0 +1,16 @@
+light:
+  - platform: monochromatic
+    name: '${nom}'
+    id: ${nom}
+    output: ${sortie}
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="${nom}" cmd="on"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<co id="${nom}" cmd="off"/>'

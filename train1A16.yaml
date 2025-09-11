@@ -53,7 +53,6 @@ mqtt:
   discovery: false
   username: !secret mqtt
   password: !secret mqttpwd
-  topic_prefix: train
   on_json_message:
     topic: train/rocrail/command
     then:
