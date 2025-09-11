@@ -1,0 +1,40 @@
+number:
+  - platform: template
+    id: ${loco}V
+    name: "${loco}V"
+    icon: mdi:speedometer
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    on_value:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: !lambda |-
+              int vitesse=lround(id(${loco}V).state);
+              return std::string("<lc id=\"${loco}\" V=\"")+std::to_string(vitesse)+std::string("\"/>");
+
+select:
+  - platform: template
+    id: ${loco}A
+    name: "${loco}A"
+    optimistic: true
+    options:
+      - avant
+      - arriere
+    initial_option: avant
+    icon: mdi:forward
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: 'return id(${loco}A).state == "avant";'
+            then:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="${loco}" dir="true"/>'
+            else:
+              - mqtt.publish:
+                  topic: rocrail/service/client
+                  payload: '<lc id="${loco}" dir="false"/>'

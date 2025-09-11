@@ -1,0 +1,10 @@
+switch:
+  - platform: gpio
+    id: ${nom}
+    pin:
+      ${multiplex}: ${hub}
+      number: ${num}
+      mode:
+        output: true
+      inverted: true
+

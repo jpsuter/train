@@ -1,0 +1,17 @@
+switch:
+  - platform: template
+    id: ${loco}f${fnum}
+    name: "${loco}f${fnum}"
+    icon: mdi:car-light-high
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="${loco}" fnchangedstate="true" fnchanged="${fnum}" f${fnum}="true"/>'
+    on_turn_off:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: '<fn id="${loco}" fnchangedstate="true" fnchanged="${fnum}" f${fnum}="false"/>'
