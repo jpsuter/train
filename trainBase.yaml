@@ -4,6 +4,7 @@ esphome:
 
 esp32:
   board: esp32dev
+#  board: wt32-eth01
   framework:
     type: esp-idf
 
@@ -14,23 +15,23 @@ api:
 ota:
   platform: esphome
 
-#ethernet:
-#  type: LAN8720
-#  mdc_pin: GPIO23
-#  mdio_pin: GPIO18
-#  clk_mode: GPIO17_OUT
-#  phy_addr: 0
-wifi:
-  ssid: !secret SSID
-  password: !secret password
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO17_OUT
+  phy_addr: 0
+#wifi:
+#  ssid: !secret SSID
+#  password: !secret password
   manual_ip:
     static_ip: 10.4.200.235
     gateway: 10.4.200.254
     subnet: 255.255.255.0
 
 i2c:
-  sda: 21
-  scl: 22
+  sda: 4
+  scl: 16
   scan: true
   id: bus_a
 
@@ -41,12 +42,12 @@ pca9685:
 mcp23017:
   - id: 'mcp23017_hub1'
     address: 0x20
-  - id: 'mcp23017_hub2'
-    address: 0x21
+#  - id: 'mcp23017_hub2'
+#    address: 0x21
   - id: 'mcp23017_hub3'
     address: 0x22
-  - id: 'mcp23017_hub4'
-    address: 0x23
+#  - id: 'mcp23017_hub4'
+#    address: 0x23
 
 
 mqtt:
@@ -159,18 +160,31 @@ mqtt:
                 else
                   switchs[index]->turn_off();
             }
-            if (type == "sw" && server != "mqttreader") {
-              std::string aiguilage(x["id"]);
-              std::string sens(x["cmd"]);
-              auto selects=App.get_selects();
-              int index=selects.size();
-              for(unsigned int i = 0; i < selects.size(); i++) {
-                if (selects[i]->get_name() == aiguilage) index=i;
-              }
-              if (index == selects.size())
-                ESP_LOGD("erreur", "index: %i", index);
-              else
-                selects[index]->publish_state(sens);
+            if (type == "state" && server != "mqttreader") {
+              std::string iid(x["iid"]);
+              if (iid == "trix") {
+                int volt(x["volt"]);
+                int load(x["load"]);
+                int temp(x["temp"]);
+                if (volt > 0)  id(TrixVolt).publish_state(volt/1000.0);
+                if (load > 0)  id(TrixCurrent).publish_state(load/1000.0);
+                if (temp != 0) id(TrixTemp).publish_state(temp);
+               }
+             }
+             if (type == "sw" && server != "mqttreader") {
+                std::string aiguilage(x["id"]);
+                std::string sens(x["cmd"]);
+                int moteur=x["value1"];
+                if (moteur == 2) aiguilage+="2";
+                auto selects=App.get_selects();
+                int index=selects.size();
+                for(unsigned int i = 0; i < selects.size(); i++) {
+                  if (selects[i]->get_name() == aiguilage) index=i;
+                }
+                if (index == selects.size())
+                  ESP_LOGD("erreur", "index: %i", index);
+                else
+                  selects[index]->publish_state(sens);
              }
 
 
@@ -246,31 +260,37 @@ packages:
     vars:
       loco: DB798
       fnum: 0
+      icone: mdi:car-light-high
   db798f1: !include
     file: locolum.yaml
     vars:
       loco: DB798
       fnum: 1
+      icone: mdi:dome-light
   db798f6: !include
     file: locolum.yaml
     vars:
       loco: DB798
       fnum: 6
+      icone: mdi:dome-light
   br206f0: !include
     file: locolum.yaml
     vars:
       loco: BR206
       fnum: 0
+      icone: mdi:car-light-high
   br23f0: !include
     file: locolum.yaml
     vars:
       loco: BR23
       fnum: 0
+      icone: mdi:car-light-high
   br74f0: !include
     file: locolum.yaml
     vars:
       loco: BR74
       fnum: 0
+      icone: mdi:car-light-high
   out0: !include
     file: outputs.yaml
     vars:
@@ -285,6 +305,48 @@ packages:
       multiplex: mcp23xxx
       hub: mcp23017_hub3
       num: 1
+  out2: !include
+    file: outputs.yaml
+    vars:
+      nom: out02
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 2
+  out3: !include
+    file: outputs.yaml
+    vars:
+      nom: out03
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 3
+  out4: !include
+    file: outputs.yaml
+    vars:
+      nom: out04
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 4
+  out5: !include
+    file: outputs.yaml
+    vars:
+      nom: out05
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 5
+  out6: !include
+    file: outputs.yaml
+    vars:
+      nom: out06
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 6
+  out7: !include
+    file: outputs.yaml
+    vars:
+      nom: out07
+      multiplex: mcp23xxx
+      hub: mcp23017_hub3
+      num: 7
   detect1: !include
     file: detecteurs.yaml
     vars:
@@ -295,9 +357,27 @@ packages:
   aiguil1: !include
     file: aiguillages.yaml
     vars:
-      nom: GH45In
+      nom: Triple
       sortieS: out00
       sortieT: out01
+  aiguil2: !include
+    file: aiguillages.yaml
+    vars:
+      nom: Triple2
+      sortieS: out02
+      sortieT: out03
+  aiguil3: !include
+    file: aiguillages.yaml
+    vars:
+      nom: GH45In
+      sortieS: out04
+      sortieT: out05
+  aiguil4: !include
+    file: aiguillages.yaml
+    vars:
+      nom: GH5In
+      sortieS: out06
+      sortieT: out07
   lum1: !include
     file: lumieres.yaml
     vars:
@@ -336,11 +416,13 @@ switch:
         - mqtt.publish:
             topic: rocrail/service/client
             payload: '<sys cmd="go"/>'
+        - switch.turn_on: MainPower
     on_turn_off:
       then:
         - mqtt.publish:
             topic: rocrail/service/client
             payload: '<sys cmd="stop"/>'
+        - switch.turn_off: MainPower
   - platform: template
     id: ModeAuto
     name: "Automatique"
@@ -357,4 +439,26 @@ switch:
         - mqtt.publish:
             topic: rocrail/service/client
             payload: '<auto cmd="off"/>'
-
+  - platform: gpio
+    id: MainPower
+    name: "MainPower"
+    pin: 15
+    inverted: False
+sensor:
+  - platform: template
+    id: TrixVolt
+    name: "TrixVolt"
+    unit_of_measurement: "V"
+    device_class: voltage
+    accuracy_decimals: 3
+  - platform: template
+    id: TrixCurrent
+    name: "TrixCurrent"
+    unit_of_measurement: "A"
+    device_class: current
+    accuracy_decimals: 3
+  - platform: template
+    id: TrixTemp
+    name: "TrixTemp"
+    unit_of_measurement: "°C"
+    device_class: temperature

@@ -16,15 +16,15 @@ select:
               - switch.turn_on: ${sortieS}
               - delay: 500ms
               - switch.turn_off: ${sortieS}
-              - mqtt.publish:
-                  topic: rocrail/service/client
-                  payload: '<sw id="${nom}" cmd="straight"/>'
+#              - mqtt.publish:
+#                  topic: rocrail/service/client
+#                  payload: '<sw id="${nom}" cmd="straight"/>'
             else:
               - switch.turn_on: ${sortieT}
               - delay: 500ms
               - switch.turn_off: ${sortieT}
-              - mqtt.publish:
-                  topic: rocrail/service/client
-                  payload: '<sw id="${nom}" cmd="turnout"/>'
+#              - mqtt.publish:
+#                  topic: rocrail/service/client
+#                  payload: '<sw id="${nom}" cmd="turnout"/>'
 
 

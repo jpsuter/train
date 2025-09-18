@@ -3,7 +3,7 @@ esphome:
   includes: std_includes.h
 
 esp32:
-  board: esp32dev
+  board: az-delivery-devkit-v4
   framework:
     type: esp-idf
 
@@ -14,15 +14,15 @@ api:
 ota:
   platform: esphome
 
-#ethernet:
-#  type: LAN8720
-#  mdc_pin: GPIO23
-#  mdio_pin: GPIO18
-#  clk_mode: GPIO17_OUT
-#  phy_addr: 0
-wifi:
-  ssid: !secret SSID
-  password: !secret password
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO17_OUT
+  phy_addr: 0
+#wifi:
+#  ssid: !secret SSID
+#  password: !secret password
   manual_ip:
     static_ip: 10.4.200.232
     gateway: 10.4.200.254
@@ -42,10 +42,10 @@ pcf8574:
     address: 0x25
     pcf8575: false
   - id: 'pcf8574_hub_in_1' # for input channel 1-8
-    address: 0x21
+    address: 0x22
     pcf8575: false
   - id: 'pcf8574_hub_in_2' # for input channel 9-16
-    address: 0x22
+    address: 0x21
     pcf8575: false
 
 mqtt:
@@ -189,31 +189,59 @@ packages:
   detect1: !include
     file: detecteurs.yaml
     vars:
-      nom: C1_in
+      nom: gh7_in
       multiplex: pcf8574
       hub: pcf8574_hub_in_1
       pin: 0
   detect2: !include
     file: detecteurs.yaml
     vars:
-      nom: C1_enter
+      nom: gh1_in
       multiplex: pcf8574
       hub: pcf8574_hub_in_1
       pin: 1
   detect3: !include
     file: detecteurs.yaml
     vars:
-      nom: C2_in
+      nom: gh1_enter
       multiplex: pcf8574
       hub: pcf8574_hub_in_1
       pin: 2
   detect4: !include
     file: detecteurs.yaml
     vars:
-      nom: C2_enter
+      nom: gh2_in
       multiplex: pcf8574
       hub: pcf8574_hub_in_1
       pin: 3
+  detect5: !include
+    file: detecteurs.yaml
+    vars:
+      nom: gh2_enter
+      multiplex: pcf8574
+      hub: pcf8574_hub_in_1
+      pin: 4
+  detect6: !include
+    file: detecteurs.yaml
+    vars:
+      nom: gh3_in
+      multiplex: pcf8574
+      hub: pcf8574_hub_in_1
+      pin: 5
+  detect7: !include
+    file: detecteurs.yaml
+    vars:
+      nom: gh4_in
+      multiplex: pcf8574
+      hub: pcf8574_hub_in_1
+      pin: 6
+  detect8: !include
+    file: detecteurs.yaml
+    vars:
+      nom: gh5_in
+      multiplex: pcf8574
+      hub: pcf8574_hub_in_1
+      pin: 7
   aiguil1: !include
     file: aiguillages.yaml
     vars:
@@ -223,37 +251,43 @@ packages:
   aiguil2: !include
     file: aiguillages.yaml
     vars:
-      nom: GB3Out
+      nom: GB3In
       sortieS: out02
       sortieT: out03
   aiguil3: !include
     file: aiguillages.yaml
     vars:
-      nom: Coul1In
+      nom: GB2Out
       sortieS: out04
       sortieT: out05
   aiguil4: !include
     file: aiguillages.yaml
     vars:
-      nom: GB3In
+      nom: GB2In
       sortieS: out06
       sortieT: out07
   aiguil5: !include
     file: aiguillages.yaml
     vars:
-      nom: GB2Out
-      sortieS: out08
-      sortieT: out09
+      nom: GB2GH
+      sortieS: out07
+      sortieT: out08
   aiguil6: !include
     file: aiguillages.yaml
     vars:
-      nom: GB2GH
+      nom: GB3Out
       sortieS: out10
       sortieT: out11
   aiguil7: !include
     file: aiguillages.yaml
     vars:
-      nom: GB2In
+      nom: Coul1In
       sortieS: out12
       sortieT: out13
+  aiguil8: !include
+    file: aiguillages.yaml
+    vars:
+      nom: GH2Out
+      sortieS: out14
+      sortieT: out15
 

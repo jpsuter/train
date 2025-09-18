@@ -1,0 +1,21 @@
+binary_sensor:
+  - platform: gpio
+    id: ${nom}
+    pin:
+      ${multiplex}: ${hub}
+      number: ${pin}
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 100ms
+    on_press:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: "<fb id=\"${nom}\" cmd=\"on\"/>"
+    on_release:
+      then:
+        - mqtt.publish:
+            topic: rocrail/service/client
+            payload: "<fb id=\"${nom}\" cmd=\"off\"/>"
